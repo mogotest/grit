@@ -65,16 +65,12 @@ module Grit
     end
 
     def self.clone(remote_repo, path, options = {})
-      epath = File.expand_path(path)
-
-      if epath =~ /\.git$/ || options[:is_bare]
-        git_options = { :bare => true }
-      else
-        git_options = {}
+      if path =~ /\.git$/
+        options[:bare] = true
       end
 
       git = Git.new(nil)
-      git.clone(git_options, remote_repo, epath)
+      git.clone(options, remote_repo, path)
 
       Repo.new(path)
     end
