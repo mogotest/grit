@@ -7,8 +7,8 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Tom Preston-Werner", "Scott Chacon"]
   s.date = %q{2009-07-13}
-  s.description = %q{Grit is a Ruby library for extracting information from a git repository in an object oriented manner.}
-  s.email = %q{tom@mojombo.com}
+  s.description = %q{Grit is a Ruby library for extracting information from a git repository in an object oriented manner. This fork has been created for use with Codaset.com.}
+  s.email = %q{joel@codaset.com}
   s.extra_rdoc_files = [
     "LICENSE",
      "README.md"
@@ -50,7 +50,7 @@ Gem::Specification.new do |s|
      "lib/grit/tree.rb",
      "lib/open3_detach.rb"
   ]
-  s.homepage = %q{http://github.com/mojombo/grit}
+  s.homepage = %q{http://github.com/joelmoss/grit}
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
   s.rubyforge_project = %q{grit}
