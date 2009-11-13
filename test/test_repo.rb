@@ -194,6 +194,14 @@ class TestRepo < Test::Unit::TestCase
     @r.fork_bare("/tmp/foo/bar.git", :template => '/awesome')
   end
 
+  # clone
+  
+  def test_clone
+    Git.any_instance.expects(:clone).returns(true)
+    Repo.expects(:new).with("/tmp/foo/dot_git.git")
+    Repo.clone(File.join(File.dirname(__FILE__), *%w[dot_git]), "/tmp/foo/dot_git.git")
+  end
+
   # diff
 
   def test_diff

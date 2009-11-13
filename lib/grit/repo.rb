@@ -65,9 +65,7 @@ module Grit
     end
 
     def self.clone(remote_repo, path, options = {})
-      if path =~ /\.git$/
-        options[:bare] = true
-      end
+      options[:bare] = true if path =~ /\.git$/
 
       git = Git.new(nil)
       git.clone(options, remote_repo, path)
