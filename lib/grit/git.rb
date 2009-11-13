@@ -112,7 +112,6 @@ module Grit
     #
     # Returns nothing
     def fs_mkdir(dir)
-      p File.join(self.git_dir, dir)
       FileUtils.mkdir_p(File.join(self.git_dir, dir))
     end
 

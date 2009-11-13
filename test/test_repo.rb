@@ -161,15 +161,15 @@ class TestRepo < Test::Unit::TestCase
 
   def test_init_bare
     Git.any_instance.expects(:init).returns(true)
-    Repo.expects(:new).with("/foo/bar.git", {})
-    Repo.init_bare("/foo/bar.git")
+    Repo.expects(:new).with("/tmp/foo/bar.git", {})
+    Repo.init_bare("/tmp/foo/bar.git")
   end
 
   def test_init_bare_with_options
     Git.any_instance.expects(:init).with(
       :bare => true, :template => "/baz/sweet").returns(true)
-    Repo.expects(:new).with("/foo/bar.git", {})
-    Repo.init_bare("/foo/bar.git", :template => "/baz/sweet")
+    Repo.expects(:new).with("/tmp/foo/bar.git", {})
+    Repo.init_bare("/tmp/foo/bar.git", :template => "/baz/sweet")
   end
 
   # fork_bare
@@ -178,20 +178,20 @@ class TestRepo < Test::Unit::TestCase
     Git.any_instance.expects(:clone).with(
       {:bare => true, :shared => true},
       "#{absolute_project_path}/.git",
-      "/foo/bar.git").returns(nil)
+      "/tmp/foo/bar.git").returns(nil)
     Repo.expects(:new)
 
-    @r.fork_bare("/foo/bar.git")
+    @r.fork_bare("/tmp/foo/bar.git")
   end
 
   def test_fork_bare_with_options
     Git.any_instance.expects(:clone).with(
       {:bare => true, :shared => true, :template => '/awesome'},
       "#{absolute_project_path}/.git",
-      "/foo/bar.git").returns(nil)
+      "/tmp/foo/bar.git").returns(nil)
     Repo.expects(:new)
 
-    @r.fork_bare("/foo/bar.git", :template => '/awesome')
+    @r.fork_bare("/tmp/foo/bar.git", :template => '/awesome')
   end
 
   # diff
