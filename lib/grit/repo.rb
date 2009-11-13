@@ -1,5 +1,12 @@
 module Grit
 
+  class RemoteError < StandardError; end
+  class RemoteNonexistentError < RemoteError; end
+  class BranchNonexistentError < RemoteError; end
+  class RemoteBranchExistsError < RemoteError; end
+  class RemoteUninitializedError < RemoteError; end
+  class ConflictError < RemoteError; end
+
   class Repo
     DAEMON_EXPORT_FILE = 'git-daemon-export-ok'
 
@@ -36,15 +43,36 @@ module Grit
         raise NoSuchPathError.new(epath)
       end
 
-      self.git = Git.new(self.path)
+      self.git = Git.new(self.path, self.working_dir)
     end
 
-    # Does nothing yet...
-    def self.init(path)
-      # !! TODO !!
-      # create directory
-      # generate initial git directory
-      # create new Grit::Repo on that dir, return it
+    def self.init(path, options = {})
+      epath = File.expand_path(path)
+
+      if epath =~ /\.git$/ || options[:is_bare]
+        path = epath
+        working_dir = nil
+      else
+        path = File.join(epath, '.git')
+        working_dir = epath
+      end
+
+      git = Git.new(path, working_dir)
+
+      git.init
+
+      Repo.new(path)
+    end
+
+    def self.clone(remote_repo, path, options = {})
+      if path =~ /\.git$/
+        options[:bare] = true
+      end
+
+      git = Git.new(nil)
+      git.clone(options, remote_repo, path)
+
+      Repo.new(path)
     end
 
     # The project's description. Taken verbatim from GIT_REPO/description
@@ -105,10 +133,31 @@ module Grit
     end
 
     # Remove files from the index
-    def remove(*files)
+    def rm(*files)
       self.git.rm({}, *files.flatten)
     end
 
+    alias :remove :rm
+
+    def rm_r(*files)
+      self.git.rm({}, '-r', *files.flatten)
+    end
+
+    alias :remove_recursively :rm_r
+
+    def mv(source, destination)
+      self.git.mv({}, source, destination)
+    end
+
+    alias :move :mv
+
+    def checkout_path_commit(commit, path)
+      self.git.checkout({}, commit, '--', path)
+    end
+
+    def revert(commit)
+      self.git.revert({}, commit)
+    end
 
     def blame_tree(commit, path = nil)
       commit_array = self.git.blame_tree(commit, path)
@@ -203,7 +252,9 @@ module Grit
     #
     # Returns Grit::Commit[] (baked)
     def commits_between(from, to)
-      Commit.find_all(self, "#{from}..#{to}").reverse
+      result = Commit.find_all(self, "#{from}..#{to}").reverse
+      remote_error
+      result
     end
 
     # The Commits objects that are newer than the specified date.
@@ -477,6 +528,78 @@ module Grit
     def inspect
       %Q{#<Grit::Repo "#{@path}">}
     end
+
+    def push(repository = nil, refspec = nil)
+      self.git.push({}, repository, refspec)
+      remote_error_or_response
+    end
+
+    def pull(repository = nil, refspec = nil)
+      # git-pull seems to ignore the --work-tree setting and only works if you're actually in the directory
+      # fatal: .../git-core/git-pull cannot be used without a working tree.
+      in_working_dir do
+        self.git.pull({}, repository, refspec)
+        remote_error_or_response
+      end
+    end
+
+    def add_remote(name = nil, url = nil)
+      self.git.remote({}, 'add', name, url)
+      remote_error_or_response
+    end
+
+    def last_error
+      !self.git.last_error.blank? ? self.git.last_error : nil
+    end
+
+    def last_response
+      !self.git.last_response.blank? ? self.git.last_response : nil
+    end
+
+    def set_config(key, value = nil)
+      self.git.config({}, key, value)
+      remote_error_or_response
+    end
+
+    private
+
+      def in_working_dir(&block)
+        cwt = self.git.work_tree
+
+        Dir.chdir(cwt) do
+          self.git.work_tree = nil
+            yield
+          self.git.work_tree = cwt
+        end
+      end
+
+      def remote_error
+        if last_error =~ /fatal: '.*': unable to chdir or not a git archive/
+          raise RemoteNonexistentError, last_error
+        elsif last_error =~ /ssh: Could not resolve hostname .*: nodename nor servname provided, or not known/
+          raise RemoteNonexistentError, last_error
+        elsif last_error =~ /does not appear to be a git repository/
+          raise RemoteNonexistentError, last_error
+        elsif last_error =~ /fatal: Couldn't find remote ref .*/
+          raise BranchNonexistentError, last_error
+        elsif last_error =~ /error: src refspec .* does not match any./
+          raise BranchNonexistentError, last_error
+        elsif last_error =~ /unknown revision or path not in the working tree/
+          raise RemoteUninitializedError, last_error
+        elsif last_error =~ /error: Entry '.*' would be overwritten by merge. Cannot merge./
+          raise ConflictError, last_error
+        elsif last_error =~ /Entry '.*' not uptodate. Cannot merge./
+          raise ConflictError, last_error
+        elsif last_error =~ /(error|fatal)/
+          raise RemoteError, last_error
+        end
+      end
+
+      def remote_error_or_response
+        remote_error
+        last_response
+      end
+
   end # Repo
 
 end # Grit
