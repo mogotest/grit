@@ -234,12 +234,14 @@ module Grit
       git_opt_args = transform_options(git_options)
       opt_args = transform_options(options)
 
+      work_tree_option = self.work_tree.nil? ? '' : " --work-tree='#{self.work_tree}'"
+
       if RUBY_PLATFORM.downcase =~ /mswin(?!ce)|mingw|bccwin/
         ext_args = args.reject { |a| a.empty? }.map { |a| (a == '--' || a[0].chr == '|') ? a : "\"#{e(a)}\"" }
-        call = "#{prefix}#{Git.git_binary} --git-dir=\"#{self.git_dir}\" #{cmd.to_s.gsub(/_/, '-')} #{(opt_args + ext_args).join(' ')}#{e(postfix)}"
+        call = "#{prefix}#{Git.git_binary}#{work_tree_option} --git-dir=\"#{self.git_dir}\" #{cmd.to_s.gsub(/_/, '-')} #{(opt_args + ext_args).join(' ')}#{e(postfix)}"
       else
         ext_args = args.reject { |a| a.empty? }.map { |a| (a == '--' || a[0].chr == '|') ? a : "'#{e(a)}'" }
-        call = "#{prefix}#{Git.git_binary} --git-dir='#{self.git_dir}' #{cmd.to_s.gsub(/_/, '-')} #{(opt_args + ext_args).join(' ')}#{e(postfix)}"
+        call = "#{prefix}#{Git.git_binary}#{work_tree_option} --git-dir='#{self.git_dir}' #{cmd.to_s.gsub(/_/, '-')} #{(opt_args + ext_args).join(' ')}#{e(postfix)}"
       end
 
       Grit.log(call) if Grit.debug
