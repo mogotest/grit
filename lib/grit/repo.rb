@@ -59,7 +59,8 @@ module Grit
 
       git = Git.new(path, working_dir)
 
-      git.init
+      git.fs_mkdir('..')
+      Grit::GitRuby::Repository.init(git.git_dir, false)
 
       Repo.new(path)
     end
